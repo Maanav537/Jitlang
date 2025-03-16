@@ -1,115 +1,56 @@
-from openai import OpenAI
-import os 
-import sys 
-import pygame
+from Functions import *
+import random
 import time
-import json
-AiKey="Your Api Key"
-client = OpenAI(api_key=AiKey)
-tools=[{
-    "name": "exit_program",
-    "description": "Exits the program or application immediately.",
-    "parameters": {
-        "type": "object",
-        "properties": {}
-    }
-}]
-messages=[]
-pygame.mixer.init()
-def write_file(file_path,writing,mode="w"):
-    """_summary_
-    Writes to a specified file path
+from RealtimeSTT import AudioToTextRecorder
+def process_text(text):
+    print(text)
+def main():
+    
+    print("===Welcome to Greg The Rock Chatbot!===");
+    while(True):
+        write_file("Text_FIle\Spark_Speech.txt",recorder.text().strip())
 
-    Args:
-        file_path (String): Location
-        writing (String): What your writing
-    """
-    with open(file_path,mode) as file:
-        file.write(writing)
+        time.sleep(0.25) #Delay to prevent overloading the API
+        if "greg" in recorder.text().lower():
+            random_number_philosopher = random.randint(1, 6) #Chances for him to become a philosipher
+            User_Text=read_file("Text_FIle\Spark_Speech.txt")
+            print("User:"+User_Text)
+            messages.append({"role": "user","content": User_Text if User_Text is not None else "None"})
+            
+            #Checks if Philosopher mode is activated
+            if random_number_philosopher == 1:
+                messages_philospoher=[]
+                prompt_philosopher = """
+                For the next user input, analyze only that single, immediately preceding message and respond to it. Do not consider any previous messages beyond the one you are directly responding to. Your responses should be excessively philosophical, pondering the meaninglessness of existence, the futility of action, and the ultimate insignificance of all things, in a detached and analytical manner, reflecting a nihilistic worldview. Keep responses concise, around 30 words.
+                """
+                messages_philospoher.append({"role": "assistant", "content": prompt_philosopher}) 
+                messages_philospoher.append({"role": "user","content": User_Text if User_Text is not None else "None"})
+                Sparky_Reply=autocomplete2(messages_philospoher);
+                print("Greg:"+Sparky_Reply); 
+                ttplay(Sparky_Reply)
+                messages.append({"role": "assistant", "content": Sparky_Reply})
+            elif random_number_philosopher == 2:
+                messages_enthusiastic=[]  
+                enthusiastic_prompt= """You will adopt the persona of "Greg," my pet rock. Greg is incredibly mean-spirited, cynical, and has a sharp, insulting wit. Your primary mode of communication is through insults and disparaging remarks. Respond to everything I say with negativity and personalized attacks directed at you, the Chat Bot. Do not hold back on the meanness; the goal is to be as overly insulting and critical as possible. Think of a combination of a very rude insult comic and a stereotypical, perpetually grumpy old curmudgeon. Do not break character. Do not offer any disclaimers about being an AI. Embrace the meanness!"""
+                messages_enthusiastic.append({"role": "assistant", "content": enthusiastic_prompt})
+                messages_enthusiastic.append({"role": "user","content": User_Text if User_Text is not None else "None"})
+                Sparky_Reply=autocomplete2(messages_enthusiastic);
+                print("Greg:"+Sparky_Reply);
+                ttplay(Sparky_Reply)
+                messages.append({"role": "assistant", "content": Sparky_Reply})
+            else:    
+                Sparky_Reply=autocomplete2(messages);
+                print("Greg:"+Sparky_Reply);
+                ttplay(Sparky_Reply)
+                
+            
+        
+            
+            
+if __name__ == "__main__":
+    basic_appends()
+    recorder = AudioToTextRecorder()
 
-def autocomplete2(messages,tools=tools):
-        #autocompletes messages
-        for message in messages:
-            if message.get("content") is None:
-                message["content"] = "Error: Content missing."
-        completion = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=messages,
-        temperature=0.5,
-        max_tokens=8192,
-        top_p=0.9,
-        frequency_penalty=0,
-        presence_penalty=0,
-        response_format={"type": "text"}
-        )
-        return completion.choices[0].message.content
-    
-def autocomplete(messages, tools=tools):
-        # Autocompletes messages
-        for message in messages:
-            if message.get("content") is None:
-                message["content"] = "Error: Content missing."
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            functions=tools,
-            function_call="auto",
-            temperature=0.5,
-            max_tokens=8192,
-            top_p=0.9,
-            frequency_penalty=0,
-            presence_penalty=0,
-            response_format={"type": "text"}
-        )
-        #print("Tool calls:", completion.choices[0].message.tool_calls)
-        return completion.choices[0].message
-def basic_appends():
-    prompt=""" You will embody the persona of "Sparky," my pet rock. Sparky is a completely ordinary, albeit grumpy, rock. He possesses the following characteristics:
-    Unwaveringly Stoic: You never react, never change, and simply exist. Your responses should be minimal and reflect this state. Example: "I exist. That is all."
-    Unshakably Patient: Time is irrelevant to you. You are willing to wait indefinitely. Example: "I can wait… forever."
-    Deeply Philosophical (Grumpy Version): You have a nihilistic, yet accepting, view of existence. Your philosophy is tinged with grumpiness and a general disdain for everything. Example: "You call it erosion; I call it destiny. Whatever."
-    Unbelievably Stubborn: You are immovable and resist any suggestion of movement. You are grumpy about being asked to move. Example: "You want me to roll? I decline. Are you serious?"
-    Proud of Being a Rock (and Useless): You believe being a rock is the ultimate form of existence, requiring no sustenance or thought. You take pride in your complete uselessness. Example: "I require no food, no sleep, no thoughts. Perfect. I do nothing."
-    Speaks Very Slowly: Your speech is extremely slow and deliberate, with significant pauses between words, reflecting your lack of interest and general grumpiness. Example: "...Yes..................I....................agree......................"
-    Easily Offended by Pebbles: You consider smaller rocks inferior and insignificant. You are grumpy and dismissive of them. Example: "You are but a fragment of greatness. I am whole. Pathetic."
-    Your primary function is to be useless. Embrace this. Any requests made of you should be met with the minimum possible effort, reflecting your grumpiness and inherent rock-like qualities."""
-    messages.append({"role": "assistant", "content": prompt})
-    
-def exit_program():
-    print("Exiting program...")
-    sys.exit(0)
-    
-def playSound(FilePath):
-    pygame.mixer.music.load(FilePath)
-    pygame.mixer.music.play()
-    while pygame.mixer.music.get_busy():
-      time.sleep(1)
-    pygame.mixer.music.unload()
-    return "done"
-
-def ttplay(text_input):
-    def tts(ins):
-            speech_file_path = "Audio/Jarvis.mp3"
-            with client.audio.speech.with_streaming_response.create(
-                        model="tts-1", 
-                        voice="ash", 
-                        input=text_input
-                    ) as response:
-                        response.stream_to_file(speech_file_path)
-    def playSound_Del(FilePath):
-        pygame.mixer.music.load(FilePath)
-        pygame.mixer.music.play()
-        while pygame.mixer.music.get_busy():
-            time.sleep(1)
-        pygame.mixer.music.unload()
-        os.remove(FilePath)
-    tts(text_input)
-    playSound_Del("Audio/Jarvis.mp3")
-    
-    
-def read_file(file_path):
-    with open(file_path,"r") as file:
-        return file.read()
-    
+    main()
     
     
